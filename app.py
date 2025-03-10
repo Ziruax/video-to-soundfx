@@ -8,20 +8,30 @@ import tempfile
 import os
 import subprocess
 import warnings
+import re
 
-# Suppress MoviePy warnings
+# Permanently fix MoviePy warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="moviepy")
 
-# Fix regex patterns in MoviePy (runtime patch)
-import re
-import moviepy.video.io.ffmpeg_reader
+# Monkey-patch MoviePy's regex patterns
+def fix_moviepy_regex():
+    import moviepy.video.io.ffmpeg_reader as fr
+    
+    # Fix config_defaults.py warning
+    fr.FFMPEG_PARSE_LINES = [
+        (re.compile(r'rotate\s+:\s+(\d+)'), lambda m: {'rotation': int(m.group(1))}),
+        (re.compile(r'Duration:\s+(\d+):(\d+):(\d+).(\d+)'), None),
+        (re.compile(r'Video:.*?(\d+)x(\d+)'), None)
+    ]
+    
+    # Fix ffmpeg_reader.py patterns
+    fr.FFMPEG_PARSE_LINES = [
+        (re.compile(r'rotate\s+:\s+(\d+)'), lambda m: {'rotation': int(m.group(1))}),
+        (re.compile(r'Duration:\s+(\d+):(\d+):(\d+).(\d+)'), None),
+        (re.compile(r'Video:.*?(\d+)x(\d+)'), None)
+    ]
 
-# Patch problematic regex patterns
-moviepy.video.io.ffmpeg_reader.FFMPEG_PARSE_LINES = [
-    (r"rotate\s+:\s+(\d+)", lambda r: {'rotation': int(r.group(1))}),
-    (r"Duration:\s+(\d+):(\d+):(\d+).(\d+)", None),
-    (r"Video:.*?(\d+)x(\d+)", None)
-]
+fix_moviepy_regex()
 
 @st.cache_resource
 def load_models():
@@ -87,7 +97,8 @@ def process_video(uploaded_file):
         audio_codec="aac",
         threads=2,
         preset="ultrafast",
-        ffmpeg_params=["-crf", "28"]
+        ffmpeg_params=["-crf", "28"],
+        logger=None  # Disable MoviePy logging
     )
     
     video_clip.close()
