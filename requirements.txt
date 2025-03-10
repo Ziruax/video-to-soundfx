@@ -1,0 +1,9 @@
+streamlit==1.32.0
+transformers==4.38.2
+torch==2.2.1
+torchaudio==2.2.1
+opencv-python-headless==4.9.0.80
+moviepy==1.0.3
+numpy==1.26.4
+ffmpeg-python==0.2.0
+soundfile==0.12.1
